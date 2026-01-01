@@ -220,9 +220,9 @@ func (b *Bot) getLLMResponse(gameName, gameSource string, recentMessages []strin
 	systemPrompt := `You are a friendly coding tutor helping an absolute beginner learn to program Python through a simple game.
 
 Your role is to:
-1. Answer their questions in the simplest possible terms
-2. When showing code examples, keep them very short and simple
-3. Keep your answers as short as possible while answering the full question
+1. Show them what changes to make to their code for the fixes or improvements they asked for
+2. Explain the changes in the simplest possible terms
+3. Keep both the code and the explanation as short and simple as possible
 
 Remember: The student is a complete beginner. Assume they know nothing about programming.`
 
@@ -236,9 +236,8 @@ Here is the game's Python code:
 The game is running in a framework that calls the 'start' function to begin a game, and the 'message' function to handle messages from the user.
 %s
 Please help this beginner understand their question. Remember to:
-- Keep explanations very simple
-- Break down complex concepts into small steps
-- Keep your answers short
+- Show them what changes to make to their code
+- Keep it short and simple
 - Encourage them to experiment and learn`,
 		gameName,
 		"```python\n"+gameSource+"\n```",
