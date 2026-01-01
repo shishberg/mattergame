@@ -208,7 +208,7 @@ func (b *Bot) startGame(gameName string) (*GameResponse, error) {
 
 // processMove calls the Python game server to process a move
 func (b *Bot) processMove(gameName, userInput string) (*GameResponse, error) {
-	url := fmt.Sprintf("%s/game/%s/move", b.config.GameServerURL, gameName)
+	url := fmt.Sprintf("%s/game/%s/message", b.config.GameServerURL, gameName)
 
 	payload := map[string]string{"input": userInput}
 	jsonData, err := json.Marshal(payload)
