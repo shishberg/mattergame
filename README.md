@@ -65,12 +65,15 @@ If you want the bot to respond to regular messages in channels:
 2. Click **Add Outgoing Webhook**
 3. Fill in:
    - Title: `Game Bot Webhook`
+   - Content Type: `application/x-www-form-urlencoded` (default)
    - Callback URLs: `https://your-bot-server.com/webhook`
    - Channel: Select channels where games can be played
-   - Trigger Words: Leave empty to trigger on all messages
-   - Trigger When: First word matches a trigger word (or select "First word starts with a trigger word")
+   - Trigger Words: Leave empty to trigger on all messages (or use trigger words if you want to limit it)
 
-**Note:** The webhook approach means the bot will see all messages in configured channels. You might want to refine this based on your needs.
+**Note:** The webhook approach means the bot will see all messages in configured channels. You might want to:
+- Use trigger words to limit when the webhook fires
+- Check that the user isn't the bot itself to avoid loops
+- Only respond when there's an active game session
 
 ## Usage
 
