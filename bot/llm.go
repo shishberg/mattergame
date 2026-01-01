@@ -238,6 +238,9 @@ Do NOT just give them the answer. Help them understand the concepts so they can 
 Here is the game's Python code:
 %s
 %s
+
+The game is running in a framework that calls the 'start' function to begin a game, and the 'message' function to handle messages from the user.
+
 **Student's Question:**
 %s
 
