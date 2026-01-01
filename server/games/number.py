@@ -24,4 +24,4 @@ def message(user_input):
     if guess > secret_number:
         return "Lower"
     if guess == secret_number:
-        return f"Correct! You found {secret_number} in {number_of_guesses} guesses!"
+        return f"Correct! You got it in {number_of_guesses} guesses!"

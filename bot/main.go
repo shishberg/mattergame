@@ -39,10 +39,12 @@ type Bot struct {
 
 // GameResponse from Python server
 type GameResponse struct {
-	Message string `json:"message"`
-	Game    string `json:"game"`
-	Error   string `json:"error"`
-	Help    string `json:"help"`
+	Message   string `json:"message"`
+	Game      string `json:"game"`
+	Error     string `json:"error"`
+	Help      string `json:"help"`
+	Type      string `json:"type"`
+	Traceback string `json:"traceback"`
 }
 
 // Post to Mattermost
@@ -112,6 +114,9 @@ func (b *Bot) handleSlashCommand(w http.ResponseWriter, r *http.Request) {
 		if response.Help != "" {
 			msg += fmt.Sprintf("\n💡 %s", response.Help)
 		}
+		if response.Traceback != "" {
+			msg += fmt.Sprintf("\n```\n%s\n```", response.Traceback)
+		}
 		b.respondEphemeral(w, msg)
 		return
 	}
@@ -173,6 +178,9 @@ func (b *Bot) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		if response.Help != "" {
 			msg += fmt.Sprintf("\n💡 %s", response.Help)
 		}
+		if response.Traceback != "" {
+			msg += fmt.Sprintf("\n```\n%s\n```", response.Traceback)
+		}
 		w.WriteHeader(http.StatusOK)
 		b.postMessage(channelID, msg)
 		return
@@ -196,7 +204,6 @@ func (b *Bot) startGame(gameName string) (*GameResponse, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
-	log.Printf("Game server response: %s", string(body))
 
 	var gameResp GameResponse
 	if err := json.Unmarshal(body, &gameResp); err != nil {
