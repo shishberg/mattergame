@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
 )
 
 // LLMConfig holds configuration for the LLM service
@@ -62,40 +61,22 @@ type MattermostPost struct {
 	CreateAt int64  `json:"create_at"`
 }
 
-// handleHelpCommand handles /game-help slash commands
-func (b *Bot) handleHelpCommand(w http.ResponseWriter, r *http.Request) {
-	// Parse form data
-	if err := r.ParseForm(); err != nil {
-		log.Printf("Error parsing form: %v", err)
-		http.Error(w, "Invalid request", http.StatusBadRequest)
-		return
-	}
-
-	// Verify token
-	if b.config.SlashHelpToken != "" && r.FormValue("token") != b.config.SlashHelpToken {
-		http.Error(w, "Unauthorized: Invalid token", http.StatusUnauthorized)
-		return
-	}
-
-	channelID := r.FormValue("channel_id")
-	text := strings.TrimSpace(r.FormValue("text"))
-
+// provideHelp handles requests for checking the game source and getting LLM advice
+func (b *Bot) provideHelp(channelID, userQuestion string) (string, error) {
 	// Check if there's an active game in this channel
 	b.mu.RLock()
 	session := b.sessions[channelID]
 	b.mu.RUnlock()
 
 	if session == nil || !session.Active {
-		b.respondEphemeral(w, "❌ No active game in this channel. Start a game with `/game <gamename>` first!")
-		return
+		return "", fmt.Errorf("No active game in this channel. Start a game with `/game <gamename>` first!")
 	}
 
 	// Get the game source code
 	gameSource, err := b.getGameSource(session.GameName)
 	if err != nil {
 		log.Printf("Error getting game source: %v", err)
-		b.respondEphemeral(w, fmt.Sprintf("❌ Couldn't get game source: %v", err))
-		return
+		return "", fmt.Errorf("Couldn't get game source: %v", err)
 	}
 
 	// Get recent channel messages
@@ -107,16 +88,13 @@ func (b *Bot) handleHelpCommand(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get LLM response
-	llmResponse, err := b.getLLMResponse(session.GameName, gameSource, recentMessages, text)
+	llmResponse, err := b.getLLMResponse(session.GameName, gameSource, recentMessages, userQuestion)
 	if err != nil {
 		log.Printf("Error getting LLM response: %v", err)
-		b.respondEphemeral(w, fmt.Sprintf("❌ Error from AI assistant: %v", err))
-		return
+		return "", fmt.Errorf("Error from AI assistant: %v", err)
 	}
 
-	// Respond with the LLM's advice
-	w.WriteHeader(http.StatusOK)
-	b.postMessage(channelID, fmt.Sprintf("**🤖 Coding Help**\n\n%s", llmResponse))
+	return fmt.Sprintf("**🤖 Coding Help**\n\n%s", llmResponse), nil
 }
 
 // getGameSource fetches the source code for a game from the Python server

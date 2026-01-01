@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -25,6 +26,7 @@ type Config struct {
 	WebhookToken   string
 	SlashGameToken string
 	SlashHelpToken string
+	BotUsername    string
 }
 
 // GameSession tracks active games per channel
@@ -61,6 +63,7 @@ func main() {
 		MattermostURL:  getEnv("MATTERMOST_URL", "https://your-mattermost.com"),
 		BotToken:       getEnv("MATTERMOST_BOT_TOKEN", ""),
 		BotUserID:      getEnv("MATTERMOST_BOT_ID", ""),
+		BotUsername:    getEnv("MATTERMOST_BOT_USERNAME", "mattergame"),
 		GameServerURL:  getEnv("GAME_SERVER_URL", "http://localhost:6000"),
 		ListenAddr:     getEnv("LISTEN_ADDR", ":6001"),
 		WebhookToken:   getEnv("MATTERMOST_WEBHOOK_TOKEN", ""),
@@ -81,7 +84,6 @@ func main() {
 	r.Use(middleware.Logger)
 
 	r.Post("/game", bot.handleSlashCommand)
-	r.Post("/help", bot.handleHelpCommand)
 	r.Post("/webhook", bot.handleWebhook)
 	r.Get("/health", handleHealth)
 
@@ -171,6 +173,28 @@ func (b *Bot) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	// Ignore messages from the bot itself to prevent loops
 	if b.config.BotUserID != "" && userID == b.config.BotUserID {
 		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	// Check for bot mention for help
+	botMention := "@" + b.config.BotUsername
+	// Check case-insensitive
+	if strings.Contains(strings.ToLower(text), strings.ToLower(botMention)) {
+		// Clean up the text: remove mention case-insensitively
+		re := regexp.MustCompile(fmt.Sprintf(`(?i)%s`, regexp.QuoteMeta(botMention)))
+		question := strings.TrimSpace(re.ReplaceAllString(text, ""))
+
+		// Run help logic in background so we can return quickly
+		w.WriteHeader(http.StatusOK)
+
+		go func() {
+			response, err := b.provideHelp(channelID, question)
+			if err != nil {
+				b.postMessage(channelID, fmt.Sprintf("❌ %v", err))
+				return
+			}
+			b.postMessage(channelID, response)
+		}()
 		return
 	}
 
