@@ -17,7 +17,7 @@ def start():
     secret_word = random.choice(words)
     number_of_guesses = 0
     guesses = []
-    return f"Guess the 5-letter word! You have {maximum_guesses} attempts."
+    return f"Guess the 5-letter word! You have {maximum_guesses} guesses."
 
 def message(user_input):
     global number_of_guesses, guesses
@@ -53,12 +53,10 @@ def message(user_input):
                 letters.remove(guess[i])
 
     # Build the result string
-    result = ""
-    for i in range(5):
-        result += colours[i] + guess[i]
+    result = guess + "\n" + "".join(colours)
     
     if guess == secret_word:
-        result += f"\nCorrect! You found '{secret_word}' in {number_of_guesses} attempts!"
+        result += f"\nCorrect! You found '{secret_word}' in {number_of_guesses} guesses!"
     
     if number_of_guesses >= maximum_guesses:
         result += f"\nGame over! The word was '{secret_word}'."
