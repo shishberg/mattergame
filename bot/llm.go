@@ -215,6 +215,7 @@ The game is running in a framework that calls the 'start' function to begin a ga
 %s
 Please help this beginner understand their question. Remember to:
 - Show them what changes to make to their code
+- Only show the changes that they need, before and after - don't show the full code
 - Keep it short and simple
 - Encourage them to experiment and learn`,
 		gameName,
