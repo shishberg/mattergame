@@ -212,10 +212,23 @@ Here is the game's Python code:
 %s
 
 The game is running in a framework that calls the 'start' function to begin a game, and the 'message' function to handle messages from the user.
+
+Only show the simplest, minimal changes needed. Don't show the full code, just the lines that need to be changed. Show the before and after, for example:
+
+---
+Change this line:
+```python
+old_line
+```
+to this:
+```python
+new_line
+```
+---
+
 %s
-Please help this beginner understand their question. Remember to:
+Please help answer this beginner's question. Remember to:
 - Show them what changes to make to their code
-- Only show the changes that they need, before and after - don't show the full code
 - Keep it short and simple
 - Encourage them to experiment and learn`,
 		gameName,
