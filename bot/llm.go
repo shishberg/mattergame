@@ -217,13 +217,13 @@ Only show the simplest, minimal changes needed. Don't show the full code, just t
 
 ---
 Change this line:
-```python
+`+"```"+`python
 old_line
-```
+`+"```"+`
 to this:
-```python
+`+"```"+`python
 new_line
-```
+`+"```"+`
 ---
 
 %s
