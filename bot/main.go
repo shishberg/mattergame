@@ -93,11 +93,24 @@ func (b *Bot) handleSlashCommand(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var cmd SlashCommandRequest
-	if err := json.NewDecoder(r.Body).Decode(&cmd); err != nil {
-		log.Printf("Error decoding command: %v", err)
+	// Parse form data
+	if err := r.ParseForm(); err != nil {
+		log.Printf("Error parsing form: %v", err)
 		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
+	}
+
+	// Extract command parameters from form
+	cmd := SlashCommandRequest{
+		Token:       r.FormValue("token"),
+		TeamID:      r.FormValue("team_id"),
+		TeamDomain:  r.FormValue("team_domain"),
+		ChannelID:   r.FormValue("channel_id"),
+		ChannelName: r.FormValue("channel_name"),
+		UserID:      r.FormValue("user_id"),
+		UserName:    r.FormValue("user_name"),
+		Command:     r.FormValue("command"),
+		Text:        r.FormValue("text"),
 	}
 
 	// Parse command: /game <gamename>
