@@ -155,17 +155,18 @@ func (b *Bot) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var payload map[string]interface{}
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		log.Printf("Error decoding webhook: %v", err)
+	// Parse form data (outgoing webhooks send application/x-www-form-urlencoded by default)
+	if err := r.ParseForm(); err != nil {
+		log.Printf("Error parsing form: %v", err)
 		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
 
 	// Extract relevant fields
-	channelID, _ := payload["channel_id"].(string)
-	// userID, _ := payload["user_id"].(string)
-	text, _ := payload["text"].(string)
+	channelID := r.FormValue("channel_id")
+	// userID := r.FormValue("user_id")
+	text := r.FormValue("text")
+	// token := r.FormValue("token")
 
 	// Check if there's an active game in this channel
 	b.mu.RLock()
