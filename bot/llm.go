@@ -62,7 +62,7 @@ type MattermostPost struct {
 	CreateAt int64  `json:"create_at"`
 }
 
-// handleHelpCommand handles /gamehelp slash commands
+// handleHelpCommand handles /game-help slash commands
 func (b *Bot) handleHelpCommand(w http.ResponseWriter, r *http.Request) {
 	// Parse form data
 	if err := r.ParseForm(); err != nil {
@@ -79,11 +79,6 @@ func (b *Bot) handleHelpCommand(w http.ResponseWriter, r *http.Request) {
 
 	channelID := r.FormValue("channel_id")
 	text := strings.TrimSpace(r.FormValue("text"))
-
-	if text == "" {
-		b.respondEphemeral(w, "Usage: /gamehelp <your question>\nExample: /gamehelp How do I check if two numbers are equal?")
-		return
-	}
 
 	// Check if there's an active game in this channel
 	b.mu.RLock()
@@ -217,20 +212,19 @@ func (b *Bot) getLLMResponse(gameName, gameSource string, recentMessages []strin
 		}
 	}
 
+	if userQuestion == "" {
+		userQuestion = fmt.Sprintf(`\n**Student's Question:**\n"%s"\n`, userQuestion)
+	}
+
 	// Build the system prompt
 	systemPrompt := `You are a friendly coding tutor helping an absolute beginner learn to program Python through a simple game.
 
 Your role is to:
-1. Explain concepts in the simplest possible terms
-2. Use analogies and real-world examples
-3. Be encouraging and patient
-4. Guide the student to discover answers rather than just giving them
-5. When showing code examples, keep them very short and simple
-6. Explain WHY things work, not just HOW
+1. Answer their questions in the simplest possible terms
+2. When showing code examples, keep them very short and simple
+3. Keep your answers as short as possible while answering the full question
 
-Remember: The student is a complete beginner. Assume they know nothing about programming. Explain every term you use. Be explicit about every step.
-
-Do NOT just give them the answer. Help them understand the concepts so they can solve it themselves.`
+Remember: The student is a complete beginner. Assume they know nothing about programming.`
 
 	// Build the user message with context
 	userMessage := fmt.Sprintf(`**Current Game: %s**
@@ -240,14 +234,11 @@ Here is the game's Python code:
 %s
 
 The game is running in a framework that calls the 'start' function to begin a game, and the 'message' function to handle messages from the user.
-
-**Student's Question:**
 %s
-
 Please help this beginner understand their question. Remember to:
 - Keep explanations very simple
 - Break down complex concepts into small steps
-- Use examples they can relate to
+- Keep your answers short
 - Encourage them to experiment and learn`,
 		gameName,
 		"```python\n"+gameSource+"\n```",
