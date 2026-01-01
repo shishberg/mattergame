@@ -226,6 +226,7 @@ func (b *Bot) processMove(gameName, userInput string) (*GameResponse, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
+	log.Printf("Game server response: %s", string(body))
 
 	var gameResp GameResponse
 	if err := json.Unmarshal(body, &gameResp); err != nil {
