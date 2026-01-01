@@ -1,0 +1,8 @@
+{
+    "chat.disableAIFeatures": true,
+    "workbench.colorTheme": "Noctis Hibernus",
+    "editor.fontSize": 14,
+    "window.zoomLevel": 1,
+    "editor.fontFamily": "Menlo, Monaco, 'Courier New', monospace",
+    "workbench.iconTheme": "material-icon-theme"
+}
