@@ -171,6 +171,50 @@ def send_message(game_name):
         traceback.print_exc()
         return jsonify(format_error_message(game_name, "message", e)), 500
 
+@app.route('/game/<game_name>/source', methods=['GET'])
+def get_source(game_name):
+    """Get the source code of a game"""
+    # Validate game name to prevent path traversal attacks
+    if '/' in game_name or '..' in game_name or '\\' in game_name:
+        return jsonify({
+            "error": "Invalid game name",
+            "help": "Game name must not contain path separators or '..' sequences"
+        }), 400
+    
+    # Construct safe path to game file
+    game_file = GAMES_DIR / f"{game_name}.py"
+    
+    # Verify the resolved path is inside GAMES_DIR (defense in depth)
+    try:
+        resolved_path = game_file.resolve()
+        if not str(resolved_path).startswith(str(GAMES_DIR.resolve())):
+            return jsonify({
+                "error": "Invalid game name",
+                "help": "Game name must not contain path traversal sequences"
+            }), 400
+    except Exception:
+        return jsonify({
+            "error": "Invalid game name"
+        }), 400
+    
+    if not game_file.exists():
+        return jsonify({
+            "error": f"Game '{game_name}' not found",
+            "available_games": list(games.keys())
+        }), 404
+    
+    try:
+        source_code = game_file.read_text()
+        return jsonify({
+            "game": game_name,
+            "source": source_code
+        })
+    except Exception as e:
+        return jsonify({
+            "error": f"Failed to read game source: {str(e)}"
+        }), 500
+
+
 @app.route('/reset', methods=['POST'])
 def reset_game():
     """Reset the current game"""

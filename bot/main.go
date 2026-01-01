@@ -17,11 +17,14 @@ import (
 
 // Config holds bot configuration
 type Config struct {
-	MattermostURL string
-	BotToken      string
-	BotUserID     string
-	GameServerURL string
-	ListenAddr    string
+	MattermostURL  string
+	BotToken       string
+	BotUserID      string
+	GameServerURL  string
+	ListenAddr     string
+	WebhookToken   string
+	SlashGameToken string
+	SlashHelpToken string
 }
 
 // GameSession tracks active games per channel
@@ -55,11 +58,14 @@ type Post struct {
 
 func main() {
 	config := Config{
-		MattermostURL: getEnv("MATTERMOST_URL", "https://your-mattermost.com"),
-		BotToken:      getEnv("MATTERMOST_BOT_TOKEN", ""),
-		BotUserID:     getEnv("MATTERMOST_BOT_ID", ""),
-		GameServerURL: getEnv("GAME_SERVER_URL", "http://localhost:6000"),
-		ListenAddr:    getEnv("LISTEN_ADDR", ":6001"),
+		MattermostURL:  getEnv("MATTERMOST_URL", "https://your-mattermost.com"),
+		BotToken:       getEnv("MATTERMOST_BOT_TOKEN", ""),
+		BotUserID:      getEnv("MATTERMOST_BOT_ID", ""),
+		GameServerURL:  getEnv("GAME_SERVER_URL", "http://localhost:6000"),
+		ListenAddr:     getEnv("LISTEN_ADDR", ":6001"),
+		WebhookToken:   getEnv("MATTERMOST_WEBHOOK_TOKEN", ""),
+		SlashGameToken: getEnv("MATTERMOST_SLASH_GAME_TOKEN", ""),
+		SlashHelpToken: getEnv("MATTERMOST_SLASH_GAME_HELP_TOKEN", ""),
 	}
 
 	if config.BotToken == "" {
@@ -75,6 +81,7 @@ func main() {
 	r.Use(middleware.Logger)
 
 	r.Post("/game", bot.handleSlashCommand)
+	r.Post("/help", bot.handleHelpCommand)
 	r.Post("/webhook", bot.handleWebhook)
 	r.Get("/health", handleHealth)
 
@@ -89,6 +96,12 @@ func (b *Bot) handleSlashCommand(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		log.Printf("Error parsing form: %v", err)
 		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+
+	// Verify token
+	if b.config.SlashGameToken != "" && r.FormValue("token") != b.config.SlashGameToken {
+		http.Error(w, "Unauthorized: Invalid token", http.StatusUnauthorized)
 		return
 	}
 
@@ -140,6 +153,12 @@ func (b *Bot) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseForm(); err != nil {
 		log.Printf("Error parsing form: %v", err)
 		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+
+	// Verify token
+	if b.config.WebhookToken != "" && r.FormValue("token") != b.config.WebhookToken {
+		http.Error(w, "Unauthorized: Invalid token", http.StatusUnauthorized)
 		return
 	}
 
