@@ -141,6 +141,7 @@ func (b *Bot) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	channelID := r.FormValue("channel_id")
 	userID := r.FormValue("user_id")
 	text := r.FormValue("text")
+	log.Printf("Received webhook for channel %s from user %s: %s", channelID, userID, text)
 
 	// Ignore messages from the bot itself to prevent loops
 	if b.config.BotUserID != "" && userID == b.config.BotUserID {
