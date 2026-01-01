@@ -19,7 +19,7 @@ import (
 type Config struct {
 	MattermostURL string
 	BotToken      string
-	BotUserName   string
+	BotUserID     string
 	GameServerURL string
 	ListenAddr    string
 }
@@ -55,7 +55,7 @@ func main() {
 	config := Config{
 		MattermostURL: getEnv("MATTERMOST_URL", "https://your-mattermost.com"),
 		BotToken:      getEnv("MATTERMOST_BOT_TOKEN", ""),
-		BotUserName:   getEnv("MATTERMOST_BOT_USERNAME", ""),
+		BotUserID:     getEnv("MATTERMOST_BOT_ID", ""),
 		GameServerURL: getEnv("GAME_SERVER_URL", "http://localhost:6000"),
 		ListenAddr:    getEnv("LISTEN_ADDR", ":6001"),
 	}
@@ -124,8 +124,9 @@ func (b *Bot) handleSlashCommand(w http.ResponseWriter, r *http.Request) {
 	}
 	b.mu.Unlock()
 
-	// Respond in channel
-	b.respondInChannel(w, fmt.Sprintf("**Starting game: %s**\n\n%s", gameName, response.Message))
+	// Post response as bot
+	w.WriteHeader(http.StatusOK)
+	b.postMessage(channelID, fmt.Sprintf("**Starting game: %s**\n\n%s", gameName, response.Message))
 }
 
 // handleWebhook handles messages in channels with active games
@@ -139,12 +140,12 @@ func (b *Bot) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	// Extract relevant fields
 	channelID := r.FormValue("channel_id")
-	userID := r.FormValue("user_name")
+	userID := r.FormValue("user_id")
 	text := r.FormValue("text")
 	log.Printf("Received webhook for channel %s from user %s: %s", channelID, userID, text)
 
 	// Ignore messages from the bot itself to prevent loops
-	if b.config.BotUserName != "" && userID == b.config.BotUserName {
+	if b.config.BotUserID != "" && userID == b.config.BotUserID {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
@@ -162,7 +163,8 @@ func (b *Bot) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	// Process the move
 	response, err := b.processMove(session.GameName, text)
 	if err != nil {
-		b.respondWebhook(w, fmt.Sprintf("❌ Error: %v", err))
+		w.WriteHeader(http.StatusOK)
+		b.postMessage(channelID, fmt.Sprintf("❌ Error: %v", err))
 		return
 	}
 
@@ -171,22 +173,13 @@ func (b *Bot) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		if response.Help != "" {
 			msg += fmt.Sprintf("\n💡 %s", response.Help)
 		}
-		b.respondWebhook(w, msg)
+		w.WriteHeader(http.StatusOK)
+		b.postMessage(channelID, msg)
 		return
 	}
 
-	b.respondWebhook(w, response.Message)
-}
-
-// respondWebhook sends a response back via the webhook HTTP response
-func (b *Bot) respondWebhook(w http.ResponseWriter, message string) {
-	log.Printf("Webhook response: %s", message)
-	response := map[string]string{
-		"text":     message,
-		"username": b.config.BotUserName,
-	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	w.WriteHeader(http.StatusOK)
+	b.postMessage(channelID, response.Message)
 }
 
 // startGame calls the Python game server to start a game
@@ -282,19 +275,6 @@ func (b *Bot) respondEphemeral(w http.ResponseWriter, message string) {
 	response := map[string]interface{}{
 		"response_type": "ephemeral",
 		"text":          message,
-		"username":      b.config.BotUserName,
-	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
-}
-
-// respondInChannel sends a response visible to everyone
-func (b *Bot) respondInChannel(w http.ResponseWriter, message string) {
-	log.Printf("In-channel response: %s", message)
-	response := map[string]interface{}{
-		"response_type": "in_channel",
-		"text":          message,
-		"username":      b.config.BotUserName,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
