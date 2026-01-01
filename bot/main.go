@@ -19,7 +19,7 @@ import (
 type Config struct {
 	MattermostURL string
 	BotToken      string
-	BotUserID     string
+	BotUserName   string
 	GameServerURL string
 	ListenAddr    string
 }
@@ -55,7 +55,7 @@ func main() {
 	config := Config{
 		MattermostURL: getEnv("MATTERMOST_URL", "https://your-mattermost.com"),
 		BotToken:      getEnv("MATTERMOST_BOT_TOKEN", ""),
-		BotUserID:     getEnv("MATTERMOST_BOT_ID", ""),
+		BotUserName:   getEnv("MATTERMOST_BOT_USERNAME", ""),
 		GameServerURL: getEnv("GAME_SERVER_URL", "http://localhost:6000"),
 		ListenAddr:    getEnv("LISTEN_ADDR", ":6001"),
 	}
@@ -139,12 +139,12 @@ func (b *Bot) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	// Extract relevant fields
 	channelID := r.FormValue("channel_id")
-	userID := r.FormValue("user_id")
+	userID := r.FormValue("user_name")
 	text := r.FormValue("text")
 	log.Printf("Received webhook for channel %s from user %s: %s", channelID, userID, text)
 
 	// Ignore messages from the bot itself to prevent loops
-	if b.config.BotUserID != "" && userID == b.config.BotUserID {
+	if b.config.BotUserName != "" && userID == b.config.BotUserName {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
@@ -181,7 +181,10 @@ func (b *Bot) handleWebhook(w http.ResponseWriter, r *http.Request) {
 // respondWebhook sends a response back via the webhook HTTP response
 func (b *Bot) respondWebhook(w http.ResponseWriter, message string) {
 	log.Printf("Webhook response: %s", message)
-	response := map[string]string{"text": message}
+	response := map[string]string{
+		"text":     message,
+		"username": b.config.BotUserName,
+	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
@@ -279,6 +282,7 @@ func (b *Bot) respondEphemeral(w http.ResponseWriter, message string) {
 	response := map[string]interface{}{
 		"response_type": "ephemeral",
 		"text":          message,
+		"username":      b.config.BotUserName,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
@@ -290,6 +294,7 @@ func (b *Bot) respondInChannel(w http.ResponseWriter, message string) {
 	response := map[string]interface{}{
 		"response_type": "in_channel",
 		"text":          message,
+		"username":      b.config.BotUserName,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
