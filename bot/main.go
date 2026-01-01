@@ -19,6 +19,7 @@ import (
 type Config struct {
 	MattermostURL string
 	BotToken      string
+	BotUserID     string
 	GameServerURL string
 	ListenAddr    string
 }
@@ -54,6 +55,7 @@ func main() {
 	config := Config{
 		MattermostURL: getEnv("MATTERMOST_URL", "https://your-mattermost.com"),
 		BotToken:      getEnv("MATTERMOST_BOT_TOKEN", ""),
+		BotUserID:     getEnv("MATTERMOST_BOT_ID", ""),
 		GameServerURL: getEnv("GAME_SERVER_URL", "http://localhost:6000"),
 		ListenAddr:    getEnv("LISTEN_ADDR", ":6001"),
 	}
@@ -137,7 +139,14 @@ func (b *Bot) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 	// Extract relevant fields
 	channelID := r.FormValue("channel_id")
+	userID := r.FormValue("user_id")
 	text := r.FormValue("text")
+
+	// Ignore messages from the bot itself to prevent loops
+	if b.config.BotUserID != "" && userID == b.config.BotUserID {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
 
 	// Check if there's an active game in this channel
 	b.mu.RLock()
